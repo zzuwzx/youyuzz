@@ -1,0 +1,55 @@
+﻿# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+*.spec
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+venv/
+.venv/
+*.egg
+
+# --- Node / Electron ---
+node_modules/
+out/
+release/
+.vite/
+*.tsbuildinfo
+
+# --- IDE ---
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- Environment ---
+.env
+.env.local
+.env.*.local
+
+# --- Project specific ---
+cache/
+logs/
+*.log
+*.tmp
+
+# --- Secrets ---
+*.pem
+*.key
+wrangler.toml
+.cloudflare/
+
+# --- Switch ---
+*.nro
+*.nsp
+*.nsz
+*.xci
