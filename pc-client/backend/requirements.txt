@@ -8,13 +8,12 @@ uvicorn[standard]>=0.27.0
 # HTTP 客户端
 httpx>=0.27.0
 
+# Windows COM (MTP 传输)
+pywin32>=305
+comtypes>=1.4.0
+
 # 浏览器自动化（爬虫）
 playwright>=1.42.0
-
-# MTP 文件传输（Switch DBI）
-# PyMTP 需要系统安装 libmtp
-# Windows: 下载 libmtp-9.dll + libusb-1.0.dll
-# https://pypi.org/project/PyMTP/
 
 # SMB 协议（NAS 通信）
 pysmb>=1.2.9
