@@ -13,7 +13,7 @@ pywin32>=305
 comtypes>=1.4.0
 
 # 浏览器自动化（爬虫）
-playwright>=1.42.0
+playwright>=1.42.0  # + 浏览器: playwright install chromium
 
 # SMB 协议（NAS 通信）
 pysmb>=1.2.9
