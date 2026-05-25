@@ -2,7 +2,7 @@
 
 核心思路：
   - 不解析 DOM，直接从 Vue 组件树读取 gameList 数据
-  - 突破点：root.$children[0].gameList
+  - 突破点：root.[0].gameList
 
 用法:
     async with GameScraper() as scraper:
@@ -14,7 +14,6 @@
 import asyncio
 import logging
 from typing import Optional
-from contextlib import asynccontextmanager
 
 from playwright.async_api import async_playwright, Browser, Page
 
@@ -45,8 +44,8 @@ EXTRACT_GAMELIST_JS = """() => {
                     }));
                 }
             }
-            if (comp.$children) {
-                for (let c of comp.$children) {
+            if (comp.) {
+                for (let c of comp.) {
                     const r = findList(c, depth + 1);
                     if (r) return r;
                 }
@@ -62,6 +61,14 @@ EXTRACT_GAMELIST_JS = """() => {
 
 SITE_URL = "https://nsthwj.cn/#/switch"
 
+# CF 挑战检测 JS
+DETECT_CF_JS = """() => {
+    if (document.title.includes('Just a moment')) return true;
+    if (document.querySelector('#challenge-running')) return true;
+    if (document.querySelector('#cf-challenge-running')) return true;
+    return false;
+}"""
+
 
 class GameScraper:
     """nsthwj.cn 游戏检索器。
@@ -69,6 +76,9 @@ class GameScraper:
     Attributes:
         name_dict: 游戏名模糊匹配词典（持久化）
     """
+
+    MAX_RETRIES = 2
+    RETRY_DELAY = 2  # seconds
 
     def __init__(self, headless: bool = True):
         self.headless = headless
@@ -92,13 +102,15 @@ class GameScraper:
             await self._playwright.stop()
         logger.info("Browser stopped")
 
+    # ---- 公开 API ----
+
     async def search(
         self,
         keyword: str,
         limit: int = 10,
         timeout: int = 15000,
     ) -> list[GameSearchResult]:
-        """搜索游戏。
+        """搜索游戏（含自动重试）。
 
         Args:
             keyword: 搜索关键词
@@ -111,26 +123,82 @@ class GameScraper:
         if not self._browser:
             raise RuntimeError("Scraper not started. Call start() first.")
 
+        last_error: Optional[Exception] = None
+        for attempt in range(self.MAX_RETRIES + 1):
+            try:
+                return await self._search_once(keyword, limit, timeout)
+            except Exception as e:
+                last_error = e
+                if attempt < self.MAX_RETRIES:
+                    logger.warning(
+                        "Search '%s' attempt %d/%d failed (%s), retrying in %ds...",
+                        keyword, attempt + 1, self.MAX_RETRIES + 1, e, self.RETRY_DELAY,
+                    )
+                    await asyncio.sleep(self.RETRY_DELAY)
+                else:
+                    logger.error(
+                        "Search '%s' exhausted %d attempts: %s",
+                        keyword, self.MAX_RETRIES + 1, e,
+                    )
+        return []
+
+    async def _search_once(
+        self,
+        keyword: str,
+        limit: int,
+        timeout: int,
+    ) -> list[GameSearchResult]:
+        """单次搜索尝试（不含重试逻辑）。"""
+        if not self._browser:
+            raise RuntimeError("Scraper not started.")
+
         page: Page = await self._browser.new_page()
 
         try:
             await page.goto(SITE_URL, timeout=timeout)
-            await page.wait_for_timeout(1500)
+            await page.wait_for_timeout(1000)
 
-            # 输入关键词触发 Vue 搜索
+            # ---- 检测 Cloudflare 挑战 ----
+            cf_detected = await page.evaluate(DETECT_CF_JS)
+            if cf_detected:
+                logger.warning(
+                    "Cloudflare challenge detected at %s, keyword='%s'",
+                    SITE_URL, keyword,
+                )
+                return []
+
+            # ---- 定位搜索框并输入关键词 ----
             search_input = page.locator("input.el-input__inner")
-            await search_input.fill(keyword)
-            await search_input.press("Enter")
+            try:
+                await search_input.fill(keyword, timeout=5000)
+                await search_input.press("Enter")
+            except Exception as e:
+                logger.error(
+                    "Search input failed for '%s' (selector may have changed): %s",
+                    keyword, e,
+                )
+                return []
+
             await page.wait_for_timeout(2500)  # Wait for Vue reactivity + filter
 
-            # 从 Vue 组件树提取数据
+            # ---- 从 Vue 组件树提取数据 ----
             raw_list = await page.evaluate(EXTRACT_GAMELIST_JS)
 
             if isinstance(raw_list, dict) and "error" in raw_list:
-                logger.error("Vue extraction error: %s", raw_list["error"])
+                logger.error(
+                    "Vue extraction error for '%s': %s",
+                    keyword, raw_list["error"],
+                )
                 return []
 
-            # 转换为 SearchResult
+            if not raw_list:
+                logger.warning(
+                    "Vue extraction returned empty for '%s' (possible structure change)",
+                    keyword,
+                )
+                return []
+
+            # ---- 转换为 SearchResult ----
             results: list[GameSearchResult] = []
             for item in raw_list:
                 name = item.get("name", "")

@@ -1,0 +1,7 @@
+=== Admin IFileOperation Test ===
+CoCreateInstance: 0x00000000
+SetOperationFlags: 0x00000000
+CopyItems: 0x00000000
+Calling PerformOperations (as admin)...
+CRASHED: exception: access violation reading 0x000024CFAE423AA2
+Done

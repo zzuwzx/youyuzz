@@ -44,7 +44,7 @@
 3. 处理网站反爬更新
 4. 新增 nsthwj.cn 以外的游戏源
 
-核心机制：Playwright → page.evaluate() 读 root.[0].gameList → 无需DOM解析。
+核心机制：Playwright → page.evaluate() 读 root.$children[0].gameList → 无需DOM解析。
 架构文档：docs/01_技术架构文档.md
 模块追踪：docs/modules/M2_网站爬虫.md
 
@@ -143,4 +143,4 @@ API 路由清单见 docs/02_系统设计文档.md 二章。
 | #3 | M3 网盘集成 | 待创建 | — |
 | #4 | M4 文件识别维护 | 待创建 | — |
 | #5 | M5 缓存管理 | 待创建 | — |
-| #6 | M6 FastAPI | 待创建 | — |
+| #6 | M6 FastAPI | 已创建 | ✅ 完成 |
