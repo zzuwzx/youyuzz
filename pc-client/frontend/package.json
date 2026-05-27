@@ -1,27 +1,37 @@
 {
-  "name": "youyuzz-frontend",
-  "version": "0.2.0",
-  "description": "鱿郁仔仔 PC GUI",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "react-router-dom": "^6.26.0"
-  },
-  "devDependencies": {
-    "@types/react": "^18.3.3",
-    "@types/react-dom": "^18.3.0",
-    "@vitejs/plugin-react": "^4.3.1",
-    "autoprefixer": "^10.4.19",
-    "postcss": "^8.4.40",
-    "tailwindcss": "^3.4.7",
-    "typescript": "^5.5.4",
-    "vite": "^5.4.0"
-  }
+    "name":  "youyuzz-frontend",
+    "version":  "0.2.0",
+    "description":  "鱿郁仔仔 PC GUI",
+    "private":  true,
+    "type":  "module",
+    "main":  "dist-electron/main.js",
+    "scripts":  {
+                    "dev":  "vite",
+                    "build":  "tsc -p tsconfig.electron.json \u0026\u0026 tsc -b \u0026\u0026 vite build",
+                    "preview":  "vite preview",
+                    "electron:dev":  "concurrently \"vite\" \"wait-on http://localhost:5173 \u0026\u0026 electron .\"",
+                    "electron:build":  "npm run build \u0026\u0026 electron-builder --config electron-builder.yml",
+                    "electron:build:win":  "npm run build \u0026\u0026 electron-builder --config electron-builder.yml --win",
+                    "electron:build:dir":  "npm run build \u0026\u0026 electron-builder --config electron-builder.yml --dir"
+                },
+    "dependencies":  {
+                         "react":  "^18.3.1",
+                         "react-dom":  "^18.3.1",
+                         "react-router-dom":  "^6.26.0",
+                         "lucide-react":  "^0.344.0"
+                     },
+    "devDependencies":  {
+                            "@types/react":  "^18.3.3",
+                            "@types/react-dom":  "^18.3.0",
+                            "@vitejs/plugin-react":  "^4.3.1",
+                            "autoprefixer":  "^10.4.19",
+                            "concurrently":  "^8.2.2",
+                            "electron":  "^31.0.0",
+                            "electron-builder":  "^24.13.3",
+                            "postcss":  "^8.4.40",
+                            "tailwindcss":  "^3.4.7",
+                            "typescript":  "^5.5.4",
+                            "vite":  "^5.4.0",
+                            "wait-on":  "^7.2.0"
+                        }
 }

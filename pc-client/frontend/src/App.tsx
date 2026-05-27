@@ -1,4 +1,4 @@
-import { Routes, Route } from "react-router-dom"
+﻿import { Routes, Route } from "react-router-dom"
 import MainPage from "./pages/MainPage"
 import SettingsPage from "./pages/SettingsPage"
 import VIPPage from "./pages/VIPPage"

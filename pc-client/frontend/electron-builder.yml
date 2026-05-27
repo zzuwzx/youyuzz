@@ -1,0 +1,64 @@
+﻿# electron-builder 配置文件
+# 文档: https://www.electron.build/configuration/configuration
+
+appId: com.youyuzz.pc-client
+productName: 鱿郁仔仔
+copyright: Copyright © 2026 鱿郁仔仔团队
+
+directories:
+  output: release
+  buildResources: build
+
+files:
+  - dist/**/*
+  - dist-electron/**/*
+  - package.json
+  - "!node_modules/**/*"
+  - "!**/*.map"
+  - "!**/*.ts"
+  - "!**/*.tsx"
+
+extraResources:
+  - from: ../backend/dist/backend.exe
+    to: backend/backend.exe
+  - from: assets/
+    to: assets/
+
+# Windows 配置
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  icon: assets/icon.ico
+  executableName: 鱿郁仔仔
+  artifactName: ${productName} Setup ${version}.${ext}
+
+# NSIS 安装程序配置
+nsis:
+  oneClick: false
+  perMachine: true
+  allowToChangeInstallationDirectory: true
+  allowElevation: true
+  installerIcon: assets/icon.ico
+  uninstallerIcon: assets/icon.ico
+  installerHeaderIcon: assets/icon.ico
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: 鱿郁仔仔
+  include: installer/installer.nsh
+  warningsAsErrors: false
+  menuCategory: true
+
+# 图标配置
+icon: assets/icon.ico
+
+# 其他配置
+compression: maximum
+asar: true
+
+# 发布配置（可选）
+# publish:
+#   provider: github
+#   owner: your-username
+#   repo: youyuzz
