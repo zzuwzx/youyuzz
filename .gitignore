@@ -5,6 +5,7 @@ __pycache__/
 dist/
 build/
 *.spec
+!pc-client/backend/build.spec
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
