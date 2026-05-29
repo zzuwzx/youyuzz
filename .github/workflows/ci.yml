@@ -1,17 +1,17 @@
 ﻿# 鱿郁仔仔 — GitHub Actions CI/CD
-# 触发条件: push to main, PR to main, tag v*
+# 触发条件: push to master, PR to master, tag v*
 
 name: CI/CD
 
 on:
   push:
-    branches: [main]
+    branches: [master]
     tags: ['v*']
   pull_request:
-    branches: [main]
+    branches: [master]
 
 env:
-  PYTHON_VERSION: '3.11'
+  PYTHON_VERSION: '3.12'
   NODE_VERSION: '18'
 
 jobs:
@@ -28,31 +28,24 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: 'pip'
+          cache-dependency-path: pc-client/backend/requirements.txt
       
       - name: Install dependencies
         run: |
           cd pc-client/backend
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install pytest pytest-asyncio pytest-mock
+          pip install pytest pytest-asyncio pytest-mock ruff
       
       - name: Run linting
         run: |
           cd pc-client/backend
-          pip install ruff
           ruff check . --select E,F,W --ignore E501
       
       - name: Run tests
         run: |
           cd pc-client/backend
           python -m pytest tests/ -v --tb=short
-      
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: backend-test-results
-          path: pc-client/backend/pytest-report.xml
 
   # ========== 前端测试 ==========
   frontend-test:
@@ -169,13 +162,21 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
-      - name: Update version in Cloudflare Worker
+      - name: Update Cloudflare Worker version
         if: success()
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
         run: |
-          # 获取版本号
           VERSION=${GITHUB_REF#refs/tags/v}
-          echo "Release version: $VERSION"
+          echo "Updating Cloudflare Worker APP_VERSION to: $VERSION"
           
-          # 注意: 需要在 Cloudflare Worker 中手动更新 APP_VERSION
-          # 或者使用 Wrangler CLI 自动更新（需要配置 CF_API_TOKEN）
-          # wrangler secret put APP_VERSION <<< "$VERSION"
+          # Install wrangler
+          npm install -g wrangler
+          
+          # Update APP_VERSION via API
+          curl -X PUT \
+            "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/youyuzz-auth/secrets" \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            -H "Content-Type: application/json" \
+            --data "{\"name\":\"APP_VERSION\",\"text\":\"${VERSION}\"}"
