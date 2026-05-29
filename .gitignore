@@ -53,6 +53,11 @@ wrangler.toml
 *.nro
 *.nsp
 *.nsz
+
+# Allow test fixture files
+!pc-client/backend/tests/fixtures/**/*.nsp
+!pc-client/backend/tests/fixtures/**/*.nsz
+!pc-client/backend/tests/fixtures/**/*.xcz
 *.xci
 
 # --- Binaries ---
