@@ -1,0 +1,22 @@
+﻿# 鱿郁仔仔 — Cloudflare CDN Worker
+# 用途：加速 GitHub Releases 分发，提供全球 CDN 加速
+# 部署：wrangler deploy
+
+name = "youyuzz-cdn"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+
+# Routes（可选，如果需要自定义域名）
+# routes = [
+#   { pattern = "cdn.your-domain.com/*", zone_name = "your-domain.com" }
+# ]
+
+[vars]
+# GitHub Release 基础 URL
+GITHUB_RELEASES_URL = "https://github.com/zzuwzx/youyuzz/releases"
+
+# 缓存时间（秒）
+CACHE_TTL = "3600"
+
+# 允许的来源
+ALLOWED_ORIGINS = "*"
