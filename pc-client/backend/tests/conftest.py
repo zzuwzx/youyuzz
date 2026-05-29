@@ -1,4 +1,8 @@
-﻿import pytest
+﻿import os, sys
+import pytest
+
+# Add backend directory to Python path so imports work in CI
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 import asyncio
 
 
