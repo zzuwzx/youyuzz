@@ -1,9 +1,10 @@
-﻿"""Cache manager: read/write/evict with TTL and JSON-backed metadata."""
+"""Cache manager: read/write/evict with TTL and JSON-backed metadata."""
 
 from __future__ import annotations
 
 import json
 import logging
+import os
 import shutil
 import time
 from pathlib import Path
