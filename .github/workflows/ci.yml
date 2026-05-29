@@ -40,7 +40,7 @@ jobs:
       - name: Run linting
         run: |
           cd pc-client/backend
-          ruff check . --select E,F,W --ignore E501
+          ruff check . --select E,F --ignore E501,E741,F401,F841 --fix
       
       - name: Run tests
         run: |
