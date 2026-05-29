@@ -1,4 +1,4 @@
-﻿# 鱿郁仔仔 — GitHub Actions CI/CD
+# 鱿郁仔仔 — GitHub Actions CI/CD
 # 触发条件: push to master, PR to master, tag v*
 
 name: CI/CD
@@ -43,9 +43,10 @@ jobs:
           ruff check . --select E,F --ignore E401,E402,E501,E701,E702,E722,E731,E741,F401,F541,F841 --fix
       
       - name: Run tests
-        run: |
-          cd pc-client/backend
-          python -m pytest tests/ -v --tb=short
+        working-directory: pc-client/backend
+        run: python -m pytest tests/ -v --tb=short
+        env:
+          PYTHONPATH: .
 
   # ========== 前端测试 ==========
   frontend-test:
