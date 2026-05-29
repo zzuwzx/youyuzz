@@ -21,6 +21,7 @@ from .models import (
     InstallProgressResponse,
     InstallTaskResponse,
     InstallStage,
+    SubTaskProgress,
 )
 
 logger = logging.getLogger(__name__)
@@ -29,9 +30,23 @@ logger = logging.getLogger(__name__)
 # MTP backend injection (set by main.py)
 _mtp_backend = None
 
+# Scraper injection (set by main.py)
+_scraper = None
+
+# Cloud disk injection (set by main.py)
+_disk = None
+
 def set_mtp_backend(backend) -> None:
     global _mtp_backend
     _mtp_backend = backend
+
+def set_scraper(scraper) -> None:
+    global _scraper
+    _scraper = scraper
+
+def set_disk(disk) -> None:
+    global _disk
+    _disk = disk
 
 router = APIRouter()
 
@@ -56,6 +71,7 @@ async def start_install(req: InstallRequest):
         "percent": 0.0,
         "current_file": None,
         "speed": None,
+        "eta": None,
         "total_files": 0,
         "completed_files": 0,
         "error": None,
@@ -65,8 +81,23 @@ async def start_install(req: InstallRequest):
 
     logger.info("安装任务已创建: task_id=%s, url=%s", task_id, req.game_url)
 
-    # Phase 2: 实际启动异步安装流程
-    # asyncio.create_task(_run_install_pipeline(task_id, req))
+    # 启动异步安装管道
+    if _scraper and _disk and _mtp_backend:
+        from services.install_pipeline import pipeline
+        asyncio.create_task(
+            pipeline.run(
+                task_id=task_id,
+                game_name=req.game_url,
+                task_store=_tasks,
+                scraper=_scraper,
+                disk=_disk,
+                mtp_backend=_mtp_backend,
+            )
+        )
+        logger.info("安装管道已启动: task_id=%s", task_id)
+    else:
+        _tasks[task_id]["stage"] = InstallStage.FAILED
+        _tasks[task_id]["error"] = "后端服务未就绪（scraper/disk/mtp 未初始化）"
 
     return InstallTaskResponse(
         task_id=task_id,
@@ -86,16 +117,66 @@ async def install_progress(task_id: str):
     if task is None:
         raise HTTPException(status_code=404, detail=f"任务不存在: {task_id}")
 
+    # 构建子任务进度（批量任务）
+    sub_tasks = None
+    if "sub_tasks" in task and task["sub_tasks"]:
+        sub_tasks = []
+        for sub_id in task["sub_tasks"]:
+            sub = _tasks.get(sub_id)
+            if sub:
+                sub_stage = sub["stage"]
+                if isinstance(sub_stage, InstallStage):
+                    sub_stage = sub_stage.value
+                sub_tasks.append(SubTaskProgress(
+                    task_id=sub_id,
+                    game_name=sub.get("game_name", ""),
+                    stage=sub_stage,
+                    percent=sub["percent"],
+                    error=sub.get("error"),
+                ))
+
     return InstallProgressResponse(
         task_id=task_id,
         stage=task["stage"],
         percent=task["percent"],
         current_file=task["current_file"],
         speed=task["speed"],
+        eta=task.get("eta"),
         total_files=task["total_files"],
         completed_files=task["completed_files"],
         error=task["error"],
+        sub_tasks=sub_tasks,
     )
+
+
+# ============================================================
+#  GET /api/install/{task_id}/sub_tasks
+# ============================================================
+
+@router.get("/install/{task_id}/sub_tasks")
+async def install_sub_tasks(task_id: str):
+    """返回批量任务中各子任务的进度。"""
+    task = _tasks.get(task_id)
+    if task is None:
+        raise HTTPException(status_code=404, detail=f"任务不存在: {task_id}")
+
+    sub_task_ids = task.get("sub_tasks", [])
+    result = []
+    for sub_id in sub_task_ids:
+        sub = _tasks.get(sub_id)
+        if sub:
+            sub_stage = sub["stage"]
+            if isinstance(sub_stage, InstallStage):
+                sub_stage = sub_stage.value
+            result.append({
+                "task_id": sub_id,
+                "game_name": sub.get("game_name", ""),
+                "stage": sub_stage,
+                "percent": sub["percent"],
+                "error": sub.get("error"),
+            })
+
+    return {"task_id": task_id, "sub_tasks": result}
 
 
 # ============================================================
@@ -115,6 +196,7 @@ async def start_local_install(req: LocalInstallRequest):
         "percent": 0.0,
         "current_file": None,
         "speed": None,
+        "eta": None,
         "total_files": 0,
         "completed_files": 0,
         "error": None,
@@ -147,21 +229,51 @@ async def start_local_install(req: LocalInstallRequest):
 @router.post("/install/batch", response_model=InstallTaskResponse, status_code=202)
 async def start_batch_install(req: BatchInstallRequest):
     """批量安装（VIP）。"""
+    # VIP 检查
+    from config import config
+    if not config.LICENSE_KEY:
+        raise HTTPException(status_code=403, detail="批量安装需要 VIP 授权，请先激活")
+
     task_id = str(uuid.uuid4())[:8]
     _tasks[task_id] = {
         "stage": InstallStage.QUEUED,
         "percent": 0.0,
         "current_file": None,
         "speed": None,
-        "total_files": len(req.game_list),
+        "eta": None,
+        "total_files": len(req.game_names),
         "completed_files": 0,
         "error": None,
-        "game_list": [g.game_url for g in req.game_list],
+        "game_names": req.game_names,
         "is_batch": True,
+        "sub_tasks": [],
     }
 
-    logger.info("批量安装任务已创建: task_id=%s, count=%d", task_id, len(req.game_list))
-    return InstallTaskResponse(task_id=task_id, status="accepted", message=f"批量安装 {len(req.game_list)} 个游戏已加入队列")
+    logger.info("批量安装任务已创建: task_id=%s, count=%d", task_id, len(req.game_names))
+
+    # 启动批量安装
+    if _scraper and _disk and _mtp_backend:
+        from services.batch_manager import batch_manager
+        asyncio.create_task(
+            batch_manager.run_batch(
+                task_id=task_id,
+                game_names=req.game_names,
+                task_store=_tasks,
+                scraper=_scraper,
+                disk=_disk,
+                mtp_backend=_mtp_backend,
+            )
+        )
+        logger.info("批量安装已启动: task_id=%s", task_id)
+    else:
+        _tasks[task_id]["stage"] = InstallStage.FAILED
+        _tasks[task_id]["error"] = "后端服务未就绪（scraper/disk/mtp 未初始化）"
+
+    return InstallTaskResponse(
+        task_id=task_id,
+        status="accepted",
+        message=f"批量安装 {len(req.game_names)} 个游戏已加入队列",
+    )
 
 
 # ============================================================
@@ -203,16 +315,37 @@ async def install_stream(task_id: str, request: Request):
                 if isinstance(stage_val, InstallStage):
                     stage_val = stage_val.value
 
+                # 构建子任务进度
+                sub_tasks_data = None
+                if "sub_tasks" in task and task["sub_tasks"]:
+                    sub_tasks_data = []
+                    for sub_id in task["sub_tasks"]:
+                        sub = _tasks.get(sub_id)
+                        if sub:
+                            sub_stage = sub["stage"]
+                            if isinstance(sub_stage, InstallStage):
+                                sub_stage = sub_stage.value
+                            sub_tasks_data.append({
+                                "task_id": sub_id,
+                                "game_name": sub.get("game_name", ""),
+                                "stage": sub_stage,
+                                "percent": sub["percent"],
+                                "error": sub.get("error"),
+                            })
+
                 current = {
                     "task_id": task_id,
                     "stage": stage_val,
                     "percent": task["percent"],
                     "current_file": task["current_file"],
                     "speed": task["speed"],
+                    "eta": task.get("eta"),
                     "total_files": task["total_files"],
                     "completed_files": task["completed_files"],
                     "error": task["error"],
                 }
+                if sub_tasks_data:
+                    current["sub_tasks"] = sub_tasks_data
 
                 # 仅在进度变化时推送
                 if current != last_sent:

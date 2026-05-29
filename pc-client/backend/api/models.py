@@ -6,7 +6,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 from enum import Enum
-from typing import Optional
+from typing import Optional, Any
 
 from pydantic import BaseModel, Field
 
@@ -74,7 +74,8 @@ class LocalInstallRequest(BaseModel):
 
 class BatchInstallRequest(BaseModel):
     """批量安装请求（VIP）。"""
-    game_list: list[InstallRequest] = Field(..., min_length=1)
+    game_names: list[str] = Field(..., min_length=1, description="游戏名列表，每行一个")
+    install_order: InstallOrder = InstallOrder.SEQUENTIAL
 
 
 class InstallStage(str, Enum):
@@ -92,6 +93,15 @@ class InstallStage(str, Enum):
     CANCELLED = "cancelled"
 
 
+class SubTaskProgress(BaseModel):
+    """批量安装子任务进度。"""
+    task_id: str
+    game_name: str = ""
+    stage: InstallStage = InstallStage.QUEUED
+    percent: float = 0.0
+    error: Optional[str] = None
+
+
 class InstallProgressResponse(BaseModel):
     """安装进度响应。"""
     task_id: str
@@ -99,9 +109,11 @@ class InstallProgressResponse(BaseModel):
     percent: float = 0.0
     current_file: Optional[str] = None
     speed: Optional[str] = None
+    eta: Optional[str] = None
     total_files: int = 0
     completed_files: int = 0
     error: Optional[str] = None
+    sub_tasks: Optional[list[SubTaskProgress]] = None
 
 
 class InstallTaskResponse(BaseModel):
@@ -143,6 +155,7 @@ class SettingsResponse(BaseModel):
     mtp_backend: str = "shell"
     auth_server_url: str = ""
     log_level: str = "INFO"
+    pushdeer_key: str = ""
 
 
 class SettingsUpdateRequest(BaseModel):
@@ -162,6 +175,14 @@ class ActivateResponse(BaseModel):
     message: str = ""
     license_key: Optional[str] = None
 
+
+
+
+class AuthStatusResponse(BaseModel):
+    """授权状态响应。"""
+    is_vip: bool = False
+    license_key: Optional[str] = None
+    expires_at: Optional[str] = None
 
 # ============================================================
 #  系统

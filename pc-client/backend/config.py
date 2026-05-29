@@ -5,8 +5,15 @@ from __future__ import annotations
 
 import os
 import platform
+import uuid
+import hashlib
 from pathlib import Path
 from dataclasses import dataclass, field
+
+
+def _default_device_id() -> str:
+    raw = f"{uuid.getnode()}:{platform.node()}"
+    return hashlib.sha256(raw.encode('utf-8')).hexdigest()[:32]
 
 
 @dataclass
@@ -24,6 +31,7 @@ class Config:
     CACHE_DIR: Path = field(default_factory=lambda: _default_cache_dir())
     DATA_DIR: Path = field(default_factory=lambda: _default_data_dir())
     LOG_DIR: Path = field(default_factory=lambda: _default_log_dir())
+    DOWNLOAD_DIR: Path = field(default_factory=lambda: _default_cache_dir() / "downloads")
 
     # -- 网盘 --
     DISK_COOKIE_DIR: Path = field(default_factory=lambda: _default_data_dir() / "cookies")
@@ -37,6 +45,11 @@ class Config:
 
     # -- 授权 --
     AUTH_SERVER_URL: str = ""  # Cloudflare Workers URL，Phase 2 填写
+    LICENSE_KEY: str = ""
+    DEVICE_ID: str = field(default_factory=_default_device_id)
+
+    # -- PushDeer --
+    PUSHDEER_KEY: str = ""  # PushDeer 推送 key，用户在设置页配置
 
     # -- 日志 --
     LOG_LEVEL: str = "INFO"

@@ -1,16 +1,19 @@
-﻿import { Routes, Route } from "react-router-dom"
+import { Routes, Route } from "react-router-dom"
+import { AuthProvider } from "./hooks/useAuth"
 import MainPage from "./pages/MainPage"
 import SettingsPage from "./pages/SettingsPage"
 import VIPPage from "./pages/VIPPage"
 
 export default function App() {
   return (
-    <div className="min-h-screen bg-bg">
-      <Routes>
-        <Route path="/" element={<MainPage />} />
-        <Route path="/settings" element={<SettingsPage />} />
-        <Route path="/vip" element={<VIPPage />} />
-      </Routes>
-    </div>
+    <AuthProvider>
+      <div className="min-h-screen bg-bg">
+        <Routes>
+          <Route path="/" element={<MainPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/vip" element={<VIPPage />} />
+        </Routes>
+      </div>
+    </AuthProvider>
   )
 }

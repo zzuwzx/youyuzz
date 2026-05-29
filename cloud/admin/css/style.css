@@ -1,0 +1,66 @@
+﻿/* style.css — 深色主题 */
+:root {
+  --bg: #1A1A2E;
+  --card: #16213E;
+  --accent: #E94560;
+  --text: #E0E0E0;
+  --text2: #A0A0B0;
+  --border: #2A2A4A;
+  --radius: 8px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); min-height:100vh; }
+
+/* layout */
+.app-shell { display:flex; min-height:100vh; }
+.sidebar { width:220px; background:var(--card); padding:24px 0; flex-shrink:0; display:flex; flex-direction:column; }
+.sidebar .logo { text-align:center; font-size:1.3rem; font-weight:700; padding:0 16px 24px; border-bottom:1px solid var(--border); }
+.sidebar nav { flex:1; padding:16px 0; }
+.nav-link { display:block; padding:10px 24px; color:var(--text2); text-decoration:none; transition:.2s; }
+.nav-link:hover, .nav-link.active { color:#fff; background:rgba(233,69,96,.15); border-left:3px solid var(--accent); }
+.content { flex:1; padding:32px 40px; overflow-y:auto; }
+
+/* login */
+.login-wrapper { display:flex; justify-content:center; align-items:center; min-height:100vh; background:var(--bg); }
+.login-card { background:var(--card); padding:48px 40px; border-radius:12px; text-align:center; min-width:320px; }
+.login-card h1 { font-size:1.8rem; margin-bottom:4px; }
+.login-card .subtitle { color:var(--text2); margin-bottom:24px; }
+.login-card input { width:100%; padding:10px 14px; border:1px solid var(--border); border-radius:var(--radius); background:var(--bg); color:var(--text); font-size:.95rem; margin-bottom:16px; }
+.login-card button { width:100%; padding:10px; background:var(--accent); color:#fff; border:none; border-radius:var(--radius); font-size:1rem; cursor:pointer; }
+.login-card button:hover { background:#c03050; }
+.error-msg { color:var(--accent); margin-top:12px; font-size:.9rem; }
+
+/* cards & form */
+.card { background:var(--card); border-radius:var(--radius); padding:20px 24px; margin-bottom:20px; }
+.form-row { display:flex; gap:16px; flex-wrap:wrap; margin-bottom:16px; }
+.form-row label { display:flex; flex-direction:column; font-size:.85rem; color:var(--text2); flex:1; min-width:140px; }
+.form-row input { margin-top:4px; padding:8px 10px; border:1px solid var(--border); border-radius:var(--radius); background:var(--bg); color:var(--text); }
+button[type=submit] { padding:10px 24px; background:var(--accent); color:#fff; border:none; border-radius:var(--radius); cursor:pointer; font-size:.95rem; }
+button[type=submit]:hover { background:#c03050; }
+
+/* table */
+.table-wrap { overflow-x:auto; }
+table { width:100%; border-collapse:collapse; font-size:.9rem; }
+th { text-align:left; padding:10px 12px; color:var(--text2); border-bottom:1px solid var(--border); font-weight:600; }
+td { padding:10px 12px; border-bottom:1px solid var(--border); }
+.mono { font-family:"Consolas","Courier New",monospace; font-size:.85rem; }
+.btn-sm { padding:4px 12px; border:1px solid var(--accent); background:transparent; color:var(--accent); border-radius:var(--radius); cursor:pointer; font-size:.8rem; }
+.btn-sm:hover { background:var(--accent); color:#fff; }
+
+/* toolbar */
+.toolbar { display:flex; align-items:center; gap:12px; margin-bottom:12px; }
+.toolbar span { color:var(--text2); }
+
+/* badge */
+.badge { padding:2px 10px; border-radius:12px; font-size:.8rem; }
+.badge.active { background:rgba(46,204,113,.2); color:#2ecc71; }
+.badge.disabled { background:rgba(233,69,96,.2); color:var(--accent); }
+
+/* stats */
+.stats-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:16px; }
+.stat-card { background:var(--card); border-radius:var(--radius); padding:24px; text-align:center; }
+.stat-icon { font-size:2rem; margin-bottom:8px; }
+.stat-value { font-size:2.2rem; font-weight:700; color:#fff; }
+.stat-label { color:var(--text2); font-size:.9rem; margin-top:4px; }
+
+h2 { margin-bottom:20px; font-size:1.3rem; }

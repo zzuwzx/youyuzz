@@ -20,19 +20,33 @@ export interface InstallRequest {
   install_order?: string[];
 }
 
+export interface BatchInstallRequest {
+  game_names: string[];
+}
+
 export interface InstallResponse {
   task_id: string;
 }
 
+export interface SubTaskProgress {
+  task_id: string;
+  game_name: string;
+  stage: string;
+  percent: number;
+  error?: string;
+}
+
 export interface InstallProgress {
   task_id: string;
-  status: 'pending' | 'downloading' | 'transferring' | 'completed' | 'failed';
-  progress: number;
+  stage: string;
+  percent: number;
   current_file: string;
   total_files: number;
+  completed_files: number;
   speed: string;
   eta: string;
   error?: string;
+  sub_tasks?: SubTaskProgress[];
 }
 
 export interface SwitchDevice {
@@ -50,6 +64,7 @@ export interface AppSettings {
   download_path: string;
   auto_install: boolean;
   notification_enabled: boolean;
+  pushdeer_key: string;
   language: string;
   theme: string;
 }

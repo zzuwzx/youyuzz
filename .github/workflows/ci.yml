@@ -1,0 +1,181 @@
+﻿# 鱿郁仔仔 — GitHub Actions CI/CD
+# 触发条件: push to main, PR to main, tag v*
+
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+
+env:
+  PYTHON_VERSION: '3.11'
+  NODE_VERSION: '18'
+
+jobs:
+  # ========== 后端测试 ==========
+  backend-test:
+    name: Backend Tests
+    runs-on: windows-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          cd pc-client/backend
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-asyncio pytest-mock
+      
+      - name: Run linting
+        run: |
+          cd pc-client/backend
+          pip install ruff
+          ruff check . --select E,F,W --ignore E501
+      
+      - name: Run tests
+        run: |
+          cd pc-client/backend
+          python -m pytest tests/ -v --tb=short
+      
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-results
+          path: pc-client/backend/pytest-report.xml
+
+  # ========== 前端测试 ==========
+  frontend-test:
+    name: Frontend Tests
+    runs-on: windows-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: pc-client/frontend/package-lock.json
+      
+      - name: Install dependencies
+        run: |
+          cd pc-client/frontend
+          npm ci
+      
+      - name: Run linting
+        run: |
+          cd pc-client/frontend
+          npm run lint --if-present
+      
+      - name: Build frontend
+        run: |
+          cd pc-client/frontend
+          npm run build
+
+  # ========== 构建打包 ==========
+  build:
+    name: Build
+    needs: [backend-test, frontend-test]
+    runs-on: windows-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      
+      - name: Install Python dependencies
+        run: |
+          cd pc-client/backend
+          pip install -r requirements.txt
+          pip install pyinstaller
+      
+      - name: Build Python backend
+        run: |
+          cd pc-client/backend
+          pyinstaller build.spec --clean --noconfirm
+      
+      - name: Install Node dependencies
+        run: |
+          cd pc-client/frontend
+          npm ci
+      
+      - name: Build Electron app
+        run: |
+          cd pc-client/frontend
+          npm run electron:build:win
+      
+      - name: Generate checksums
+        run: |
+          cd pc-client/frontend/release
+          Get-ChildItem -Filter "*.exe" | ForEach-Object {
+            $hash = (Get-FileHash $_.FullName -Algorithm SHA256).Hash
+            "$hash  $($_.Name)" | Out-File -FilePath "checksums.sha256" -Append -Encoding UTF8
+          }
+      
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-artifacts
+          path: |
+            pc-client/frontend/release/*.exe
+            pc-client/frontend/release/checksums.sha256
+
+  # ========== 发布 ==========
+  release:
+    name: Release
+    needs: [build]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-artifacts
+          path: ./release
+      
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            ./release/*.exe
+            ./release/checksums.sha256
+          generate_release_notes: true
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Update version in Cloudflare Worker
+        if: success()
+        run: |
+          # 获取版本号
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "Release version: $VERSION"
+          
+          # 注意: 需要在 Cloudflare Worker 中手动更新 APP_VERSION
+          # 或者使用 Wrangler CLI 自动更新（需要配置 CF_API_TOKEN）
+          # wrangler secret put APP_VERSION <<< "$VERSION"

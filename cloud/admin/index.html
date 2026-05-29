@@ -1,0 +1,62 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>鱿郁仔仔 - 管理后台</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- 登录页（无侧边栏） -->
+  <div id="login-view"></div>
+
+  <!-- 主界面壳 -->
+  <div class="app-shell" id="main-shell" style="display:none">
+    <aside class="sidebar">
+      <div class="logo">🦑 鱿郁仔仔</div>
+      <nav>
+        <a href="#/stats" class="nav-link">📊 统计概览</a>
+        <a href="#/codes" class="nav-link">🎫 兑换码管理</a>
+        <a href="#/users" class="nav-link">👥 用户列表</a>
+      </nav>
+      <a href="#" id="logout-btn" class="nav-link" style="margin-top:auto">🚪 退出登录</a>
+    </aside>
+    <main class="content" id="app"></main>
+  </div>
+
+  <!-- JS 模块 -->
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/router.js"></script>
+  <script src="js/pages/login.js"></script>
+  <script src="js/pages/codes.js"></script>
+  <script src="js/pages/users.js"></script>
+  <script src="js/pages/stats.js"></script>
+  <script>
+    // 注册路由
+    Router.register("#/login", (container) => {
+      document.getElementById("main-shell").style.display = "none";
+      const lv = document.getElementById("login-view");
+      lv.style.display = "";
+      renderLogin(lv);
+    });
+    Router.register("#/codes",  (container) => { showShell(); renderCodes(container); });
+    Router.register("#/users",  (container) => { showShell(); renderUsers(container); });
+    Router.register("#/stats",  (container) => { showShell(); renderStats(container); });
+
+    function showShell() {
+      document.getElementById("login-view").style.display = "none";
+      document.getElementById("main-shell").style.display = "flex";
+    }
+
+    document.getElementById("logout-btn").addEventListener("click", (e) => {
+      e.preventDefault();
+      Auth.clear();
+      location.hash = "#/login";
+    });
+
+    // 启动路由
+    Router.start();
+  </script>
+</body>
+</html>

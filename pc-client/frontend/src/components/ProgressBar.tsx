@@ -11,7 +11,7 @@ export function ProgressBar({ progress }: ProgressBarProps) {
       <div className="w-full h-1.5 bg-divider rounded-full overflow-hidden">
         <div
           className="h-full bg-accent rounded-full transition-all duration-300 ease-out"
-          style={{ width: `${Math.min(100, Math.max(0, progress.progress))}%` }}
+          style={{ width: `${Math.min(100, Math.max(0, progress.percent))}%` }}
         />
       </div>
 
@@ -32,7 +32,7 @@ export function ProgressBar({ progress }: ProgressBarProps) {
       )}
 
       {/* Error */}
-      {progress.status === 'failed' && progress.error && (
+      {progress.error && progress.error && (
         <div className="p-2 bg-error/10 border border-error/30 rounded text-xs text-error">
           {progress.error}
         </div>
@@ -40,3 +40,4 @@ export function ProgressBar({ progress }: ProgressBarProps) {
     </div>
   );
 }
+

@@ -4,12 +4,17 @@ import type {
   GameItem, 
   GameDetail, 
   InstallRequest, 
+  BatchInstallRequest,
   InstallResponse, 
   InstallProgress,
+  SubTaskProgress,
   SwitchDevice,
   AppSettings,
   ApiResponse 
 } from '../types/api';
+import type { AuthStatus } from '../types/auth';
+
+type ActivateLicenseResponse = { success: boolean; message?: string; license_key?: string };
 
 const BASE_URL = '/api';
 
@@ -31,7 +36,7 @@ class ApiClient {
         const errorData = await response.json().catch(() => ({}));
         return {
           success: false,
-          error: errorData.message || `HTTP ${response.status}: ${response.statusText}`,
+          error: errorData.message || errorData.detail || `HTTP ${response.status}: ${response.statusText}`,
         };
       }
 
@@ -71,6 +76,19 @@ class ApiClient {
     return this.request<InstallProgress>(`/install/${taskId}/progress`);
   }
 
+  // 批量安装（VIP）
+  async startBatchInstall(gameNames: string[]): Promise<ApiResponse<InstallResponse>> {
+    return this.request<InstallResponse>('/install/batch', {
+      method: 'POST',
+      body: JSON.stringify({ game_names: gameNames }),
+    });
+  }
+
+  // 获取批量子任务进度
+  async getSubTasks(taskId: string): Promise<ApiResponse<{ task_id: string; sub_tasks: SubTaskProgress[] }>> {
+    return this.request<{ task_id: string; sub_tasks: SubTaskProgress[] }>(`/install/${taskId}/sub_tasks`);
+  }
+
   // 本地安装
   async localInstall(folderPath: string): Promise<ApiResponse<InstallResponse>> {
     return this.request<InstallResponse>('/install/local', {
@@ -99,6 +117,27 @@ class ApiClient {
     return this.request<void>('/settings', {
       method: 'PUT',
       body: JSON.stringify(settings),
+    });
+  }
+
+  // 更新单个设置项
+  async updateSetting(key: string, value: string): Promise<ApiResponse<void>> {
+    return this.request<void>('/settings', {
+      method: 'PUT',
+      body: JSON.stringify({ key, value }),
+    });
+  }
+
+  // 获取授权状态
+  async getAuthStatus(): Promise<ApiResponse<AuthStatus>> {
+    return this.request<AuthStatus>('/auth/status');
+  }
+
+  // 激活授权码
+  async activateLicense(code: string): Promise<ApiResponse<ActivateLicenseResponse>> {
+    return this.request<ActivateLicenseResponse>('/auth/activate', {
+      method: 'POST',
+      body: JSON.stringify({ code }),
     });
   }
 

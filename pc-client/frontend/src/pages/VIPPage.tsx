@@ -1,6 +1,7 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { ArrowLeft, Crown, Check, X, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
 
 const BASIC_FEATURES = [
   "单游戏搜索",
@@ -22,11 +23,19 @@ const VIP_FEATURES = [
 
 export default function VIPPage() {
   const navigate = useNavigate();
+  const { isVip, licenseKey, expiresAt, isLoading, error, activate } = useAuth();
   const [code, setCode] = useState("");
 
-  const handleActivate = () => {
-    // Placeholder: no real activation logic
-    alert("激活功能待接入后端 API");
+  const handleActivate = async () => {
+    const trimmed = code.trim();
+    if (!trimmed) {
+      return;
+    }
+
+    const ok = await activate(trimmed);
+    if (ok) {
+      setCode("");
+    }
   };
 
   return (
@@ -113,34 +122,55 @@ export default function VIPPage() {
         </div>
 
         {/* Activation code */}
-        <div className="bg-bg-card border border-divider rounded-lg p-5 space-y-4">
-          <h3 className="text-sm text-text-primary font-medium">输入激活码</h3>
-
-          <div className="flex gap-3">
-            <input
-              type="text"
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              placeholder="输入 16 位激活码..."
-              className="flex-1 h-10 px-4 bg-bg border border-divider rounded-lg text-sm text-text-primary placeholder:text-text-secondary outline-none focus:border-accent transition-colors duration-150 font-mono"
-            />
-            <button
-              onClick={handleActivate}
-              disabled={!code.trim()}
-              className={`h-10 px-6 rounded-lg text-sm font-medium transition-all duration-150 ${
-                code.trim()
-                  ? "bg-accent text-white hover:bg-accent/90 active:scale-[0.98]"
-                  : "bg-divider text-text-secondary cursor-not-allowed"
-              }`}
-            >
-              激活
-            </button>
+        {isVip ? (
+          <div className="bg-bg-card border border-vip-gold/30 rounded-lg p-5 space-y-2">
+            <div className="flex items-center gap-2 text-vip-gold">
+              <Crown className="w-4 h-4" />
+              <span className="text-sm font-medium">VIP 已激活</span>
+            </div>
+            <p className="text-sm text-text-secondary">
+              授权码：<span className="text-text-primary font-mono">{licenseKey}</span>
+            </p>
+            {expiresAt && (
+              <p className="text-sm text-text-secondary">
+                有效期至：<span className="text-text-primary">{expiresAt}</span>
+              </p>
+            )}
           </div>
+        ) : (
+          <div className="bg-bg-card border border-divider rounded-lg p-5 space-y-4">
+            <h3 className="text-sm text-text-primary font-medium">输入激活码</h3>
 
-          <p className="text-xs text-text-secondary">
-            兑换码可闲鱼搜索「鱿鱼仔仔」
-          </p>
-        </div>
+            <div className="flex gap-3">
+              <input
+                type="text"
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                placeholder="输入 16 位激活码..."
+                className="flex-1 h-10 px-4 bg-bg border border-divider rounded-lg text-sm text-text-primary placeholder:text-text-secondary outline-none focus:border-accent transition-colors duration-150 font-mono"
+              />
+              <button
+                onClick={handleActivate}
+                disabled={!code.trim() || isLoading}
+                className={`h-10 px-6 rounded-lg text-sm font-medium transition-all duration-150 ${
+                  code.trim() && !isLoading
+                    ? "bg-accent text-white hover:bg-accent/90 active:scale-[0.98]"
+                    : "bg-divider text-text-secondary cursor-not-allowed"
+                }`}
+              >
+                {isLoading ? "激活中..." : "激活"}
+              </button>
+            </div>
+
+            {error && (
+              <p className="text-sm text-error">{error}</p>
+            )}
+
+            <p className="text-xs text-text-secondary">
+              兑换码可闲鱼搜索「鱿鱼仔仔」
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

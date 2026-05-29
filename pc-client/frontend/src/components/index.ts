@@ -13,3 +13,4 @@ export { ProgressBar } from './ProgressBar';
 export { StatusBar } from './StatusBar';
 export { SearchBox } from './SearchBox';
 export { GameList } from './GameList';
+export { BatchInstall } from './BatchInstall';

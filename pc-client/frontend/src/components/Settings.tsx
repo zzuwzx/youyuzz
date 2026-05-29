@@ -99,6 +99,21 @@ export function Settings({ settings, onSave, isLoading = false }: SettingsProps)
           </button>
         </div>
 
+        {/* PushDeer Key */}
+        <div>
+          <label className="block text-sm text-text-secondary mb-2">PushDeer Key</label>
+          <input
+            type="text"
+            value={formData.pushdeer_key || ''}
+            onChange={(e) => handleChange('pushdeer_key', e.target.value)}
+            placeholder="输入 PushDeer 推送 Key"
+            className="w-full px-4 py-2 bg-bg border border-divider rounded-lg text-sm text-text-primary placeholder:text-text-secondary outline-none focus:border-accent transition-colors font-mono"
+          />
+          <p className="text-xs text-text-secondary mt-1">
+            用于安装完成/失败时推送通知到手机。在 PushDeer App 中获取 Key。
+          </p>
+        </div>
+
         {/* 语言 */}
         <div>
           <label className="block text-sm text-text-secondary mb-2">语言</label>

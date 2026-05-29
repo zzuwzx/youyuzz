@@ -1,0 +1,32 @@
+﻿*** Begin Patch
+*** Update File: C:\Users\wzxxx\Documents\switch 双系统自动化\pc-client\backend\main.py
+@@ from config import config
+ from api import api_router
+ from api.models import ErrorResponse
++from services.auto_updater import AutoUpdater
++from services.lan_accelerator import get_accelerator
+ 
+ # ============================================================
+ #  日志配置
+@@ logger.info("鱿郁仔仔 v%s 启动中...", config.VERSION)
++    
++    # 初始化局域网加速器
++    try:
++        accelerator = get_accelerator()
++        status = accelerator.get_status()
++        logger.info("局域网加速器已初始化: is_lan=%s, active_url=%s", 
++                    status["is_lan"], status["active_url"])
++    except Exception:
++        logger.warning("局域网加速器初始化失败", exc_info=True)
++    
++    # 初始化自动更新器
++    try:
++        updater = AutoUpdater(current_version=config.VERSION)
++        # 后台检查更新（不阻塞启动）
++        asyncio.create_task(_check_update_background(updater))
++        logger.info("自动更新器已初始化")
++    except Exception:
++        logger.warning("自动更新器初始化失败", exc_info=True)
+     
+     # 初始化 PushDeer 通知器
+*** End Patch
