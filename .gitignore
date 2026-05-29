@@ -1,4 +1,4 @@
-﻿# --- Python ---
+# --- Python ---
 __pycache__/
 *.py[cod]
 *.egg-info/
@@ -38,6 +38,7 @@ desktop.ini
 
 # --- Project specific ---
 cache/
+!pc-client/backend/cache/
 logs/
 *.log
 *.tmp
